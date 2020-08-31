@@ -6,27 +6,27 @@ from bs4 import BeautifulSoup
 import requests
 
 def scrape():
-    executable_path = {'executable_path': '/usr/local/bin/chromedriver'}
+    executable_path = {'executable_path': '/Users/timtallent/Documents/Documents/chromedriver'}
     browser = Browser('chrome', **executable_path, headless=False)
 
-    news_title, news_p = scrape_news()
+    news_title, news_p = scrape_news(browser)
 
     mars_dict= {}
 
     mars_dict['title'] = news_title
     mars_dict['paragraph'] = news_p
 
-    mars_dict['main_image'] = scrape_mars_image()
+    mars_dict['main_image'] = scrape_image(browser)
 
-    mars_dict['mars_facts'] = mars_facts()
+    mars_dict['mars_facts'] = scrape_facts(browser)
 
-    mars_dict['mars_hemispheres'] = mars_hemisphere()
+    mars_dict['mars_hemispheres'] = scrape_hemispheres(browser)
 
     browser.quit()
     return mars_dict 
 
 # Mars News
-def scrape_news():
+def scrape_news(browser):
 
     #url to be scraped
     url = 'https://mars.nasa.gov/news/'
@@ -49,24 +49,23 @@ def scrape_news():
     return news_title, news_p
 
 # Mars Image
-def scrape_image():
-        #url to be scraped
-        url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
-        #retrive page w/ request module
-        response = requests.get(url)
-        browser.visit(url)
-        #create bs object and parse w/ html parser
-        soup = BeautifulSoup(response.text, 'html.parser')
-        #print(soup.prettify())
+def scrape_image(browser):
+    #url to be scraped
+    url = 'https://www.jpl.nasa.gov/spaceimages/?search=&category=Mars'
+    #retrive page w/ request module
+    response = requests.get(url)
+    browser.visit(url)
+    #create bs object and parse w/ html parser
+    soup = BeautifulSoup(response.text, 'html.parser')
     try:
         relative_image_path = soup.find_all('img')[2]["src"]
-        carousel_item = url + relative_image_path
-        #print(carousel_item)
+        carousel_item = "https://www.jpl.nasa.gov" + relative_image_path
+        return(carousel_item)
     except AttributeError:
         return None, None 
 
 # Mars Facts 
-def scrape_facts():
+def scrape_facts(browser):
     #url to be scraped
     url = 'https://space-facts.com/mars/'
     #retrive page w/ request module
@@ -79,7 +78,7 @@ def scrape_facts():
     return mars_facts
 
 # Mars Hemispheres
-def scrape_hemispheres():
+def scrape_hemispheres(browser):
     #url to be scraped
     url = 'https://astrogeology.usgs.gov/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
     #retrive page w/ request module
@@ -92,22 +91,23 @@ def scrape_hemispheres():
     hemisphere = soup.find_all('div', class_='item')
     USGS_url = 'https://astrogeology.usgs.gov'
 
+    hemisphere_image_url = []
     #loop through all images (reference activity 5 mongo scraping)
-for hemis in hemisphere:
-    #Store title
-    title = hemis.find("h3").text
-    # Store link of the image
-    temp_img = hemis.find('a', class_= 'itemLink product-item')['href']
+    for hemis in hemisphere:
+        #Store title
+        title = hemis.find("h3").text
+        # Store link of the image
+        temp_img = hemis.find('a', class_= 'itemLink product-item')['href']
     
-    #visit the link
-    browser.visit(USGS_url + temp_img)
-    
-    temp_img_html = browser.html
-    
-    soup_img_html = BeautifulSoup(temp_img_html, 'html.parser')
-    
-    full_img_url = USGS_url + soup_img_html.find('img', class_='wide-image')['src']
-    
-    hemisphere_image_url.append({"title":title, "img_url":full_img_url})
+        #visit the link
+        browser.visit(USGS_url + temp_img)
+        
+        temp_img_html = browser.html
+        
+        soup_img_html = BeautifulSoup(temp_img_html, 'html.parser')
+        
+        full_img_url = USGS_url + soup_img_html.find('img', class_='wide-image')['src']
+        
+        hemisphere_image_url.append({"title":title, "img_url":full_img_url})
    
-hemisphere_image_url
+    return hemisphere_image_url
